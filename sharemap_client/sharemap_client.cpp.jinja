@@ -1,0 +1,485 @@
+/***
+ * Simple CLI program to test the sharemap interface.
+ */
+#include "sharemap.hpp"
+#include "udp.hpp"
+#include <chrono>
+#include <csignal>
+#include <cstdio>
+#include <iostream>
+#include <string>
+#include <thread>
+
+// Sharemap proxy settings
+std::string sharemap_control_url = "udp://0.0.0.0:3333";
+std::string sharemap_metrics_url = "udp://127.0.0.1:4444";
+
+anysignal::udp_sock *control_socket = nullptr;
+anysignal::udp_sock *metrics_socket = nullptr;
+
+
+{%- for sharemap_name, sharemap in sharemaps %}
+anysignal::sharemap_{{ sharemap_name }}_t {{ sharemap_name }};
+{%- endfor %}
+
+std::thread recv_thread;
+
+static volatile bool metrics_initialized = false;
+
+// Signal handler
+static volatile bool running = true;
+static volatile bool receiving = false;
+static void signal_callback_handler(int signum)
+{
+    printf("Caught signal %d\n", signum);
+    receiving = false;
+    running = false;
+    // stop calls blocking on getline stdin
+    fclose(stdin);
+}
+
+void recv_metrics()
+{
+    anysignal::sharemap_metrics_t::packed_t packed_metrics;
+    while (receiving)
+    {
+
+        // Wait for metrics
+        if (metrics_socket->recv_ready(std::chrono::milliseconds(500)))
+        {
+            // Receive packed data
+            size_t recvd = metrics_socket->recv(reinterpret_cast<uint8_t *>(&packed_metrics),
+                                                anysignal::sharemap_metrics_t::PACKED_SIZE);
+            if (recvd != anysignal::sharemap_metrics_t::PACKED_SIZE)
+            {
+                continue;
+            }
+
+            // Unpack
+            metrics = anysignal::sharemap_unpack(packed_metrics);
+
+            // Check the hash
+            if (metrics.schema_hash != anysignal::sharemap_metrics_t::HASH)
+            {
+                printf("Unexpected schema hash (0x%lX)\n", metrics.schema_hash);
+            }
+
+            metrics_initialized = true;
+        }
+    }
+}
+
+void help()
+{
+    std::cout << "Usage:  <command> [<args>]" << std::endl;
+    std::cout << "    Supported commands:" << std::endl;
+    std::cout << "    help                Display this help" << std::endl;
+    std::cout << "    set <key> <value>   Set a value" << std::endl;
+    std::cout << "    send config         Send the configuration" << std::endl;
+    std::cout << "    connect             Connect to sharemap server" << std::endl;
+    std::cout << "    disconnect          Disconnect from sharemap server" << std::endl;
+    std::cout << "    display <what>      Display info.  <what> can be \"config\" or \"metrics\"" << std::endl;
+    std::cout << "    quit                Quit this application" << std::endl;
+}
+
+// Helper functions for conversion to and from strings
+static inline void set(std::string& lhs, std::string& rhs)
+{
+    if (rhs == "\"\"" || rhs == "''" || rhs == "{}")
+        lhs = "";
+    else
+        lhs = rhs;
+}
+
+static inline void set(bool& lhs, std::string& rhs)
+{
+    lhs = (rhs == "true" or rhs == "1" ? true : false);
+}
+
+static inline void set(std::uint8_t& lhs, std::string& rhs)
+{
+    lhs = uint8_t(stoul(rhs));
+}
+
+static inline void set(std::uint16_t& lhs, std::string& rhs)
+{
+    lhs = uint16_t(stoul(rhs));
+}
+
+static inline void set(std::uint32_t& lhs, std::string& rhs)
+{
+    lhs = uint32_t(stoul(rhs));
+}
+
+static inline void set(std::uint64_t& lhs, std::string& rhs)
+{
+    lhs = stoull(rhs);
+}
+
+static inline void set(std::int8_t& lhs, std::string& rhs)
+{
+    lhs = int8_t(stoi(rhs));
+}
+
+static inline void set(std::int16_t& lhs, std::string& rhs)
+{
+    lhs = int16_t(stoi(rhs));
+}
+
+static inline void set(std::int32_t& lhs, std::string& rhs)
+{
+    lhs = stol(rhs);
+}
+
+static inline void set(std::int64_t& lhs, std::string& rhs)
+{
+    lhs = stoll(rhs);
+}
+
+static inline void set(double& lhs, std::string& rhs)
+{
+    lhs = stod(rhs);
+}
+
+static inline void set(float& lhs, std::string& rhs)
+{
+    lhs = stof(rhs);
+}
+
+static inline void set(std::array<char, anysignal::STRING_BUFFER_SIZE>& lhs, std::string& rhs)
+{
+    std::memset(reinterpret_cast<char *>(lhs.data()), 0, lhs.max_size());
+    if (rhs != "\"\"" && rhs != "''" && rhs != "{}")
+    {
+        std::memcpy(reinterpret_cast<char *>(lhs.data()),
+                    reinterpret_cast<char *>(rhs.data()),
+                    std::min(lhs.max_size() - 1, rhs.length()));
+    }
+}
+
+static inline std::string to_string(std::string& val)
+{
+    return val;
+}
+
+static inline std::string to_string(bool& val)
+{
+    return val ? std::string("true") : std::string("false");
+}
+
+static inline std::string to_string(uint8_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(uint16_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(uint32_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(uint64_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(int8_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(int16_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(int32_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(int64_t& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(float& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(double& val)
+{
+    return std::to_string(val);
+}
+
+static inline std::string to_string(std::array<char, anysignal::STRING_BUFFER_SIZE>& val)
+{
+    return std::string(val.begin(), val.end());
+}
+
+void set(std::string args)
+{
+    auto pos = args.find_first_of(" ");
+    auto key = args.substr(0, pos);
+    auto val = pos == std::string::npos ? std::string("") : args.substr(pos + 1);
+
+    if (key.empty())
+    {
+        std::cout << "Missing <key>" << std::endl;
+        return;
+    }
+    else if (val.empty())
+    {
+        std::cout << "Missing <value>" << std::endl;
+        return;
+    }
+    else if (key == "sharemap_control_url")
+    {
+        sharemap_control_url = val;
+    }
+    else if (key == "sharemap_metrics_url")
+    {
+        sharemap_metrics_url = val;
+    }
+    {%- for sharemap_name, sharemap in sharemaps %}
+    {%- for field in sharemap.get_fields() %}
+    {%- if sharemap_name == "config" %}
+    else if (key == "{{ field.name }}")
+    {
+        set({{ sharemap_name }}.{{ field.name }}, val);
+    }
+    {%- endif %}
+    {%- endfor %}
+    {%- endfor %}
+    else {
+        std::cout << "Invalid <key>: " << key << std::endl;
+        return;
+    }
+
+    std::cout << key << " set to " << val << std::endl;
+}
+
+void display(std::string what)
+{
+    if (what.empty())
+    {
+        std::cout << "Missing argument to display command" << std::endl;
+        return;
+    }
+    {%- for sharemap_name, sharemap in sharemaps %}
+    else if (what == "{{ sharemap_name }}")
+    {
+        {%- if sharemap_name == "config" %}
+        std::cout << "sharemap_control_url = " << sharemap_control_url << std::endl;
+        std::cout << "sharemap_metrics_url = " << sharemap_metrics_url << std::endl;
+        {%- endif %}
+        {%- if sharemap_name == "metrics" %}
+        if (!metrics_initialized)
+        {
+            std::cout << "No metrics received" << std::endl;
+            return;
+        }
+        {%- endif %}
+        {%- for field in sharemap.get_fields() %}
+        std::cout << "{{ field.name }} = " << to_string({{ sharemap_name }}.{{ field.name }}) << std::endl;
+        {%- endfor %}
+    }
+    {%- endfor %}
+    else
+    {
+        std::cout << "Invalid argument to display command: " << what << std::endl;
+    }
+}
+
+void connect()
+{
+    std::cout << "Connecting sharemap client" << std::endl;
+    if (metrics_socket)
+    {
+        std::cout << "Already connected" << std::endl;
+        return;
+    }
+    control_socket = new anysignal::udp_sock();
+    control_socket->connect(sharemap_control_url);
+    metrics_socket = new anysignal::udp_sock();
+    metrics_socket->bind(sharemap_metrics_url);
+
+    std::cout << "Starting metrics monitor" << std::endl;
+    receiving = true;
+    recv_thread = std::thread(recv_metrics);
+}
+
+void disconnect()
+{
+    std::cout << "Disonnecting sharemap client" << std::endl;
+    if (!metrics_socket)
+    {
+        std::cout << "No connection detected" << std::endl;
+        return;
+    }
+    receiving = false;
+    if (recv_thread.joinable())
+    {
+        recv_thread.join();
+    }
+    delete control_socket;
+    control_socket = nullptr;
+    delete metrics_socket;
+    metrics_socket = nullptr;
+    metrics_initialized = false;
+}
+
+void send_cmd(std::string arg)
+{
+    if (arg == "config")
+    {
+        std::cout << "Sending config" << std::endl;
+        if (!control_socket)
+        {
+            std::cout << "No control socket connected" << std::endl;
+            return;
+        }
+        auto packed_config = anysignal::sharemap_pack(config);
+        control_socket->send(reinterpret_cast<uint8_t *>(&packed_config), anysignal::sharemap_config_t::PACKED_SIZE);
+        std::cout << "Config sent" << std::endl;
+    }
+    else
+    {
+        std::cout << "invalid argument to send command: " << arg << std::endl;
+    }
+}
+
+int main(int /*argc*/, char * /*argv*/[])
+{
+    // Register signal handler
+    signal(SIGINT, signal_callback_handler);
+    signal(SIGTERM, signal_callback_handler);
+
+    // Initial config
+    std::string val;
+    config.psk_cc_tx_force_on = false;
+    config.psk_cc_tx_idle_timeout_s = 4;
+    config.psk_cc_tx_fe_frequency = 2.25e9;
+    config.psk_cc_tx_fe_sample_rate = 30.72e6;
+    config.psk_cc_tx_fe_stx1_enable = true;
+    config.psk_cc_tx_fe_stx1_gain = 55;
+    config.psk_cc_tx_fe_stx1_atten = 0;
+    config.psk_cc_tx_fe_stx2_enable = false;
+    config.psk_cc_tx_fe_stx2_gain = 55;
+    config.psk_cc_tx_fe_stx2_atten = 0;
+    config.psk_cc_tx_symbol_rate = 960e3;
+    config.psk_cc_rx_force_on = true;
+    config.psk_cc_rx_idle_timeout_s = 4;
+    config.psk_cc_rx_low_power_timeout_s = 1;
+    val = "MANUAL";
+    std::copy(val.begin(), val.end(), config.psk_cc_rx_gain_mode.data());
+    config.psk_cc_rx_auto_antenna_selection = false;
+    config.psk_cc_rx_fe_frequency = 2.053e9;
+    config.psk_cc_rx_fe_sample_rate = 30.72e6;
+    config.psk_cc_rx_fe_srx1_enable = true;
+    config.psk_cc_rx_fe_srx1_gain = 40;
+    config.psk_cc_rx_fe_srx1_atten = 0;
+    config.psk_cc_rx_fe_srx2_enable = false;
+    config.psk_cc_rx_fe_srx2_gain = 40;
+    config.psk_cc_rx_fe_srx2_atten = 0;
+    config.psk_cc_rx_fe_sample_rate = 30.72e6;
+    config.psk_cc_rx_symbol_rate = 960e3;
+    config.dvbs2_tx_force_on = false;
+    config.dvbs2_tx_idle_timeout_s = 4;
+    config.dvbs2_tx_fe_frequency = 8.488e9;
+    config.dvbs2_tx_fe_gain = 69;
+    config.dvbs2_tx_fe_sample_rate = 30.72e6;
+    config.dvbs2_tx_symbol_rate = 3.84e6;
+    val = "QPSK";
+    std::copy(val.begin(), val.end(), config.dvbs2_tx_modulation.data());
+    val = "1/4";
+    std::copy(val.begin(), val.end(), config.dvbs2_tx_coding.data());
+    val = "35%";
+    std::copy(val.begin(), val.end(), config.dvbs2_tx_rolloff.data());
+    val = "NORMAL";
+    std::copy(val.begin(), val.end(), config.dvbs2_tx_frame_length.data());
+    config.dvbs2_tx_signal_scaling = 1.0;
+    config.gfsk_tx_force_on = false;
+    config.gfsk_tx_idle_timeout_s = 10;
+    config.gfsk_tx_fe_frequency = 401.5e6;
+    config.gfsk_tx_fe_gain = 10;
+    config.gfsk_tx_fe_atten = 0;
+    config.gfsk_tx_fe_sample_rate = 400e3;
+    config.gfsk_tx_symbol_rate = 9.6e3;
+    config.gfsk_tx_mod_index = 0.5;
+    config.gfsk_tx_max_payload_len = 128;
+    config.gfsk_tx_bt = 1.0;
+    val = "tx_sband";
+    std::copy(val.begin(), val.end(), config.anylink_active_tx_channel.data());
+
+    std::string in;
+    std::string command;
+    std::string args;
+    while (running)
+    {
+        std::cout << "> ";
+        std::getline(std::cin, in);
+        if (std::cin.eof()) break; // stdin closed by signal handler
+        auto pos = in.find_first_of(' ');
+        if (pos == std::string::npos)
+        {
+            command = in;
+            args = "";
+        }
+        else
+        {
+            command = in.substr(0, pos);
+            args = in.substr(pos + 1);
+        }
+        if (command == "help" or command == "?")
+        {
+            help();
+        }
+        else if (command == "set")
+        {
+            set(args);
+        }
+        else if (command == "display")
+        {
+            display(args);
+        }
+        else if (command == "set")
+        {
+            set(args);
+        }
+        else if (command == "connect")
+        {
+            connect();
+        }
+        else if (command == "disconnect")
+        {
+            disconnect();
+        }
+        else if (command == "send")
+        {
+            send_cmd(args);
+        }
+        else if (command == "quit")
+        {
+            running = false;
+        }
+        else
+        {
+            std::cout << "Invalid command: " << command << std::endl;
+            help();
+        }
+    }
+
+    if (recv_thread.joinable())
+    {
+        receiving = false;
+        recv_thread.join();
+    }
+
+    return EXIT_SUCCESS;
+}

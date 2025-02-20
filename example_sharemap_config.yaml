@@ -1,0 +1,54 @@
+psk_cc_tx_force_on: false
+psk_cc_tx_idle_timeout_s: 10
+psk_cc_tx_fe_frequency: 2.24e9
+psk_cc_tx_fe_sample_rate: 20.48e6
+psk_cc_tx_fe_stx1_enable: true
+psk_cc_tx_fe_stx1_gain: 60
+psk_cc_tx_fe_stx1_atten: 15
+psk_cc_tx_fe_stx2_enable: false
+psk_cc_tx_fe_stx2_gain: 60
+psk_cc_tx_fe_stx2_atten: 15
+psk_cc_tx_symbol_rate: 650e3
+psk_cc_tx_modulation: QPSK
+
+psk_cc_rx_force_on: true
+psk_cc_rx_idle_timeout_s: 10
+psk_cc_rx_low_power_timeout_s: 1
+psk_cc_rx_fe_frequency: 2.065e9
+psk_cc_rx_fe_sample_rate: 20.48e6
+psk_cc_rx_fe_srx1_enable: true
+psk_cc_rx_fe_srx1_gain: 45
+psk_cc_rx_fe_srx1_atten: 15
+psk_cc_rx_fe_srx2_enable: false
+psk_cc_rx_fe_srx2_gain: 45
+psk_cc_rx_fe_srx2_atten: 15
+psk_cc_rx_fe_sample_rate: 20.48e6
+psk_cc_rx_symbol_rate: 320e3
+psk_cc_rx_modulation: QPSK
+psk_cc_rx_gain_mode: SLOW_AGC
+psk_cc_rx_auto_antenna_selection: false
+
+dvbs2_tx_force_on: false
+dvbs2_tx_idle_timeout_s: 10
+dvbs2_tx_fe_frequency: 8.488e9
+dvbs2_tx_fe_gain: 69
+dvbs2_tx_fe_sample_rate: 16e6
+dvbs2_tx_symbol_rate: 4e6
+dvbs2_tx_signal_scaling: 1.0
+dvbs2_tx_modulation: "QPSK"
+dvbs2_tx_coding: "1/4"
+dvbs2_tx_rolloff: "35%"
+dvbs2_tx_frame_length: "NORMAL"
+
+gfsk_tx_force_on: false
+gfsk_tx_idle_timeout_s: 10
+gfsk_tx_fe_frequency: 401.5e6
+gfsk_tx_fe_gain: 10
+gfsk_tx_fe_atten: 30
+gfsk_tx_fe_sample_rate: 400e3
+gfsk_tx_symbol_rate: 12.5e3
+gfsk_tx_mod_index: 0.5
+gfsk_tx_max_payload_len: 128
+gfsk_tx_bt: 1.0
+
+anylink_active_tx_channel: tx_sband

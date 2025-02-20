@@ -1,0 +1,185 @@
+#pragma once
+
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <array>
+#include <chrono>
+#include <string>
+#include <string_view>
+#include <type_traits>
+
+namespace anysignal {
+
+static constexpr std::size_t STRING_BUFFER_SIZE = {{ Sharemap.SCHEMA_TYPES["string"][0] }};
+
+template <typename T, std::enable_if_t<std::is_same_v<T, std::array<char, STRING_BUFFER_SIZE>>, bool> = true>
+void sharemap_pack_field(const T &in, std::uint8_t *out)
+{
+    std::memset(out, 0, STRING_BUFFER_SIZE);
+
+    // Make sure string is nul-terminated.
+    std::memcpy((char *)out, in.data(), in.max_size() - 1);
+}
+
+template <typename T, std::enable_if_t<std::is_same_v<T, bool>, bool> = true>
+void sharemap_pack_field(const T &in, std::uint8_t *out)
+{
+    *out = in?1:0;
+}
+
+template <typename T, std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T, bool>, bool> = true>
+void sharemap_pack_field(const T &in, std::uint8_t *out)
+{
+    for (std::size_t i = 0; i < sizeof(T); ++i)
+    {
+        out[i] = std::uint8_t(in >> ((sizeof(T) - i - 1) * CHAR_BIT) & 0xFF);
+    }
+}
+
+template <typename T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+void sharemap_pack_field(const T &in, std::uint8_t *out)
+{
+    std::memcpy(out, &in, sizeof(T));
+}
+
+template <typename T, std::enable_if_t<std::is_same_v<T, std::array<char, STRING_BUFFER_SIZE>>, bool> = true>
+void sharemap_unpack_field(const std::uint8_t *in, T &out)
+{
+    // We use nul-terminated byte strings.
+    std::memcpy(reinterpret_cast<char *>(out.data()), in, out.max_size() - 1);
+    out[out.max_size() - 1] = '\0';
+}
+
+template <typename T, std::enable_if_t<std::is_same_v<T, bool>, bool> = true>
+void sharemap_unpack_field(const std::uint8_t *in, T &out)
+{
+    out = (*in) != 0;
+}
+
+template <typename T, std::enable_if_t<std::is_integral_v<T> and not std::is_same_v<T, bool>, bool> = true>
+void sharemap_unpack_field(const std::uint8_t *in, T &out)
+{
+    out = T{};
+    for (std::size_t i = 0; i < sizeof(T); ++i)
+    {
+        out |= T{in[i]} << ((sizeof(T) - i - 1) * CHAR_BIT);
+    }
+}
+
+template <typename T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+void sharemap_unpack_field(const std::uint8_t *in, T &out)
+{
+    std::memcpy(&out, in, sizeof(T));
+}
+
+[[nodiscard]] static inline std::int64_t time_ns_since_epoch(void)
+{
+    const auto ts = std::chrono::system_clock::now();
+    return std::chrono::time_point_cast<std::chrono::nanoseconds>(ts).time_since_epoch().count();
+}
+
+#define anysignal_sharemap_pack_field(in, out, name) \
+    anysignal::sharemap_pack_field(in.name, out.name)
+
+#define anysignal_sharemap_unpack_field(in, out, name) \
+    anysignal::sharemap_unpack_field(in.name, out.name)
+
+template <typename ObjectMap, typename SharemapField, std::enable_if_t<std::is_same_v<SharemapField, std::array<char, STRING_BUFFER_SIZE>>, bool> = true>
+void anysignal_sharemap_from_object_map_field(const ObjectMap &in, const char *const name, SharemapField &out)
+{
+    if (auto it = in.find(name); it != in.end()) {
+        const std::string &ref = it->second;
+        std::strncpy(out.data(), ref.c_str(), out.max_size() - 1);
+        out[out.max_size() - 1] = '\0';
+    }
+}
+
+template <typename ObjectMap, typename SharemapField, std::enable_if_t<std::negation_v<std::is_same<SharemapField, std::array<char, STRING_BUFFER_SIZE>>>, bool> = false>
+void anysignal_sharemap_from_object_map_field(const ObjectMap &in, const char *const name, SharemapField &out)
+{
+    if (auto it = in.find(name); it != in.end()) {
+        out = it->second;
+    }
+}
+
+template <typename SharemapField, typename ObjectMap, std::enable_if_t<std::is_same_v<SharemapField, std::array<char, STRING_BUFFER_SIZE>>, bool> = true>
+void anysignal_sharemap_to_object_map_field(const SharemapField &in, ObjectMap &out, const char *const name)
+{
+    out[name] = in.data();
+}
+
+template <typename SharemapField, typename ObjectMap, std::enable_if_t<std::negation_v<std::is_same<SharemapField, std::array<char, STRING_BUFFER_SIZE>>>, bool> = false>
+void anysignal_sharemap_to_object_map_field(const SharemapField &in, ObjectMap &out, const char *const name)
+{
+    out[name] = in;
+}
+
+{%- for sharemap_name, sharemap in sharemaps %}
+
+// {{ sharemap_name }} sharemap binary over the wire format
+struct sharemap_{{ sharemap_name }}_packed_t
+{
+    {%- for field in sharemap.get_fields() %}
+    std::uint8_t {{ field.name }}[{{ sharemap.SCHEMA_TYPES[field.type][0] }}]{};
+    {%- endfor %}
+} __attribute__((packed));
+
+struct sharemap_{{ sharemap_name }}_t
+{
+    static constexpr std::string_view NAME{"{{ sharemap_name }}"};
+    static constexpr std::uint64_t HASH{0x{{ '%x'%sharemap.get_hash() }}};
+    using packed_t = sharemap_{{ sharemap_name }}_packed_t;
+    static constexpr size_t PACKED_SIZE{sizeof(packed_t)};
+    {% for field in sharemap.get_fields() %}
+    // {{ field.desc }}
+    {{ sharemap.SCHEMA_TYPES[field.type][1] }} {{ field.name }}{{'{%s}'%field.default}};
+    {% endfor %}
+
+    template <typename ObjectMap>
+    void from_object_map(const ObjectMap &in)
+    {
+        {%- for field in sharemap.get_fields() %}
+        anysignal_sharemap_from_object_map_field(in, reinterpret_cast<const char *>("{{field.name}}"), this->{{field.name}});
+        {%- endfor %}
+    }
+
+    template <typename ObjectMap>
+    void to_object_map(ObjectMap &out) const
+    {
+        {%- for field in sharemap.get_fields() %}
+        anysignal_sharemap_to_object_map_field(this->{{field.name}}, out, reinterpret_cast<const char *>("{{field.name}}"));
+        {%- endfor %}
+    }
+};
+
+static inline sharemap_{{ sharemap_name }}_packed_t sharemap_pack(sharemap_{{ sharemap_name }}_t &in)
+{
+    in.unix_timestamp_ns = time_ns_since_epoch();
+    sharemap_{{ sharemap_name }}_packed_t out{};
+    {%- for field in sharemap.get_fields() %}
+    anysignal_sharemap_pack_field(in, out, {{field.name}});
+    {%- endfor %}
+    return out;
+}
+
+static inline sharemap_{{ sharemap_name }}_t sharemap_unpack(const sharemap_{{ sharemap_name }}_packed_t &in)
+{
+    sharemap_{{ sharemap_name }}_t out{};
+    {%- for field in sharemap.get_fields() %}
+    anysignal_sharemap_unpack_field(in, out, {{field.name}});
+    {%- endfor %}
+    return out;
+}
+
+{%- endfor %}
+
+// Call a templated function on every sharemap
+#define anysignal_sharemap_for_each(fcn, ...) {\
+    {%- for sharemap_name, sharemap in sharemaps %}
+        fcn<sharemap_{{ sharemap_name }}_t>(__VA_ARGS__); \
+    {%- endfor %}
+    }
+
+} // namespace anysignal
