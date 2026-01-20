@@ -1,0 +1,10 @@
+# ShareMap Configuration Web Server Dependencies
+
+# Web framework
+Flask>=2.0.0
+
+# YAML parsing
+PyYAML>=6.0
+
+# Optional: for production deployment
+gunicorn>=20.1.0

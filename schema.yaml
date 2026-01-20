@@ -1,825 +1,476 @@
+# ShareMap Configuration Schema with Validation Enhancements
 # Always sent by the gateway
 # Always received by the USX
 config:
+  # ============================================
+  # PSK CC TX Configuration
+  # ============================================
   psk_cc_tx_force_on:
     type: boolean
     desc: Force the channel to always be on.
     path: radio/psk_cc/tx/config/force_on
+    default: false
+    
   psk_cc_tx_idle_timeout_s:
     type: u64
     desc: Power down channel after being idle for specified time.
     path: radio/psk_cc/tx/config/idle_timeout_s
+    default: 10
+    min: 0
+    max: 3600
+    unit: seconds
+    
   psk_cc_tx_fe_frequency:
     type: f64
     desc: Frequency to transmit at.
     path: radio/psk_cc/tx/config/fe/frequency
+    default: 2.24e9
+    min: 1.0e6
+    max: 10.0e9
+    unit: Hz
+    
   psk_cc_tx_fe_stx1_enable:
     type: boolean
     desc: Enable STX1 channel (STX2 must be disabled).
     path: radio/psk_cc/tx/config/fe/rf_channels/STX1/enable
+    default: true
+    mutex_with: psk_cc_tx_fe_stx2_enable
+    
   psk_cc_tx_fe_stx1_gain:
     type: f64
     desc: Gain setting for STX1.
     path: radio/psk_cc/tx/config/fe/rf_channels/STX1/gain
+    default: 60
+    min: 0
+    max: 89.75
+    step: 0.25
+    unit: dB
+    
   psk_cc_tx_fe_stx1_atten:
     type: f64
     desc: Digital step attenuator setting for STX1.
     path: radio/psk_cc/tx/config/fe/rf_channels/STX1/atten
+    default: 15
+    min: 0
+    max: 31.75
+    step: 0.25
+    unit: dB
+    
   psk_cc_tx_fe_stx2_enable:
     type: boolean
     desc: Enable STX2 channel (STX1 must be disabled).
     path: radio/psk_cc/tx/config/fe/rf_channels/STX2/enable
+    default: false
+    mutex_with: psk_cc_tx_fe_stx1_enable
+    
   psk_cc_tx_fe_stx2_gain:
     type: f64
     desc: Gain setting for STX2.
     path: radio/psk_cc/tx/config/fe/rf_channels/STX2/gain
+    default: 60
+    min: 0
+    max: 89.75
+    step: 0.25
+    unit: dB
+    
   psk_cc_tx_fe_stx2_atten:
     type: f64
     desc: Digital step attenuator setting for STX2.
     path: radio/psk_cc/tx/config/fe/rf_channels/STX2/atten
+    default: 15
+    min: 0
+    max: 31.75
+    step: 0.25
+    unit: dB
+    
   psk_cc_tx_fe_sample_rate:
     type: f64
     desc: Sample rate of the ad9361. The sample rate for all channels using the ad9361 should match if they are in active use (i.e. psk_cc tx/rx and dvbs2).
     path: radio/psk_cc/tx/config/fe/sample_rate
+    default: 20.48e6
+    min: 521e3
+    max: 61.44e6
+    unit: Hz
+    
   psk_cc_tx_symbol_rate:
     type: f64
     desc: Symbol rate of the waveform.
     path: radio/psk_cc/tx/config/symbol_rate
+    default: 650e3
+    min: 1e3
+    max: 30.72e6
+    unit: symbols/s
+    
   psk_cc_tx_modulation:
     type: string
     desc: "Symbol modulation config: BPSK/QPSK"
     path: radio/psk_cc/tx/config/modulation
+    default: QPSK
+    options:
+      - BPSK
+      - QPSK
 
+  # ============================================
+  # PSK CC RX Configuration
+  # ============================================
   psk_cc_rx_force_on:
     type: boolean
     desc: Force the channel to always be on.
     path: radio/psk_cc/rx/config/force_on
+    default: true
+    
   psk_cc_rx_idle_timeout_s:
     type: u64
     desc: Power down channel after being idle for specified time.
     path: radio/psk_cc/rx/config/idle_timeout_s
+    default: 10
+    min: 0
+    max: 3600
+    unit: seconds
+    
   psk_cc_rx_low_power_timeout_s:
     type: u64
     desc: Power up channel after being in powered down for specified time.
     path: radio/psk_cc/rx/config/low_power_timeout_s
+    default: 1
+    min: 0
+    max: 3600
+    unit: seconds
+    
   psk_cc_rx_gain_mode:
     type: string
     desc: "Gain mode. Valid values are: MANUAL, SLOW_AGC, FAST_AGC, and HYBRID_AGC."
     path: radio/psk_cc/rx/config/gain_mode
+    default: SLOW_AGC
+    options:
+      - MANUAL
+      - SLOW_AGC
+      - FAST_AGC
+      - HYBRID_AGC
+      
   psk_cc_rx_auto_antenna_selection:
     type: boolean
     desc: "Enable automatic antenna selection."
     path: radio/psk_cc/rx/config/auto_antenna_selection
+    default: false
+    
   psk_cc_rx_fe_frequency:
     type: f64
     desc: Frequency to receive from.
     path: radio/psk_cc/rx/config/fe/frequency
+    default: 2.065e9
+    min: 1.0e6
+    max: 10.0e9
+    unit: Hz
+    
   psk_cc_rx_fe_srx1_enable:
     type: boolean
     desc: Enable SRX1 channel (SRX2 must be disabled).
     path: radio/psk_cc/rx/config/fe/rf_channels/SRX1/enable
+    default: true
+    mutex_with: psk_cc_rx_fe_srx2_enable
+    
   psk_cc_rx_fe_srx1_gain:
     type: f64
     desc: Gain setting for SRX1.
     path: radio/psk_cc/rx/config/fe/rf_channels/SRX1/gain
+    default: 45
+    min: 0
+    max: 76
+    step: 1
+    unit: dB
+    
   psk_cc_rx_fe_srx1_atten:
     type: f64
     desc: Digitial step attenuator setting for SRX1.
     path: radio/psk_cc/rx/config/fe/rf_channels/SRX1/atten
+    default: 15
+    min: 0
+    max: 31.75
+    step: 0.25
+    unit: dB
+    
   psk_cc_rx_fe_srx2_enable:
     type: boolean
     desc: Enable SRX2 channel (SRX1 must be disabled).
     path: radio/psk_cc/rx/config/fe/rf_channels/SRX2/enable
+    default: false
+    mutex_with: psk_cc_rx_fe_srx1_enable
+    
   psk_cc_rx_fe_srx2_gain:
     type: f64
     desc: Gain setting for SRX2.
     path: radio/psk_cc/rx/config/fe/rf_channels/SRX2/gain
+    default: 45
+    min: 0
+    max: 76
+    step: 1
+    unit: dB
+    
   psk_cc_rx_fe_srx2_atten:
     type: f64
     desc: Digital step attenuator setting for SRX2.
     path: radio/psk_cc/rx/config/fe/rf_channels/SRX2/atten
+    default: 15
+    min: 0
+    max: 31.75
+    step: 0.25
+    unit: dB
+    
   psk_cc_rx_fe_sample_rate:
     type: f64
     desc: Sample rate of the ad9361. The sample rate for all channels using the ad9361 should match if they are in active use (i.e. psk_cc tx/rx and dvbs2).
     path: radio/psk_cc/rx/config/fe/sample_rate
+    default: 20.48e6
+    min: 521e3
+    max: 61.44e6
+    unit: Hz
+    
   psk_cc_rx_symbol_rate:
     type: f64
     desc: Symbol rate of the waveform.
     path: radio/psk_cc/rx/config/symbol_rate
+    default: 320e3
+    min: 1e3
+    max: 30.72e6
+    unit: symbols/s
+    
   psk_cc_rx_modulation:
     type: string
     desc: "Symbol modulation config: BPSK/QPSK"
     path: radio/psk_cc/rx/config/modulation
+    default: QPSK
+    options:
+      - BPSK
+      - QPSK
 
+  # ============================================
+  # DVB-S2 TX Configuration
+  # ============================================
   dvbs2_tx_force_on:
     type: boolean
     desc: Force the channel to always be on.
     path: radio/dvbs2/tx/config/force_on
+    default: false
+    
   dvbs2_tx_idle_timeout_s:
     type: u64
     desc: Power down channel after being idle for specified time.
     path: radio/dvbs2/tx/config/idle_timeout_s
+    default: 10
+    min: 0
+    max: 3600
+    unit: seconds
+    
   dvbs2_tx_fe_frequency:
     type: f64
     desc: Frequency to transmit at.
     path: radio/dvbs2/tx/config/fe/frequency
+    default: 8.488e9
+    min: 1.0e6
+    max: 12.0e9
+    unit: Hz
+    
   dvbs2_tx_fe_gain:
     type: f64
     desc: Gain setting for dvbs2 TX.
     path: radio/dvbs2/tx/config/fe/gain
+    default: 69
+    min: 0
+    max: 89.75
+    step: 0.25
+    unit: dB
+    
   dvbs2_tx_fe_sample_rate:
     type: f64
     desc: Sample rate of the ad9361. The sample rate for all channels using the ad9361 should match if they are in active use (i.e. psk_cc tx/rx and dvbs2).
     path: radio/dvbs2/tx/config/fe/sample_rate
+    default: 16e6
+    min: 521e3
+    max: 61.44e6
+    unit: Hz
+    
   dvbs2_tx_symbol_rate:
     type: f64
     desc: Symbol rate.  Must be integer division of sample rate.
     path: radio/dvbs2/tx/config/symbol_rate
+    default: 4e6
+    min: 1e3
+    max: 30.72e6
+    unit: symbols/s
+    
   dvbs2_tx_modulation:
     type: string
     desc: "Modulation to use. Valid values are: unmodulated, QPSK, 8PSK, 16APSK, and 32APSK."
     path: radio/dvbs2/tx/config/modulation
+    default: QPSK
+    options:
+      - unmodulated
+      - QPSK
+      - 8PSK
+      - 16APSK
+      - 32APSK
+      
   dvbs2_tx_coding:
     type: string
     desc: "Error correction code to use. Valid values are: 1/4, 1/3, 2/5, 1/2, 3/5, 2/3, 3/4, 4/5, 5/6, 8/9, 9/10, 11/45, 4/15, 14/45, 7/15, 8/15, 26/45, and 32/45."
     path: radio/dvbs2/tx/config/coding
+    default: "1/4"
+    options:
+      - "1/4"
+      - "1/3"
+      - "2/5"
+      - "1/2"
+      - "3/5"
+      - "2/3"
+      - "3/4"
+      - "4/5"
+      - "5/6"
+      - "8/9"
+      - "9/10"
+      - "11/45"
+      - "4/15"
+      - "14/45"
+      - "7/15"
+      - "8/15"
+      - "26/45"
+      - "32/45"
+      
   dvbs2_tx_rolloff:
     type: string
     desc: "Filter rolloff. Valid values are: 35%, 25%, 20%, 15%, 10%, 5%, and the empty string for no rolloff."
     path: radio/dvbs2/tx/config/rolloff
+    default: "35%"
+    options:
+      - "35%"
+      - "25%"
+      - "20%"
+      - "15%"
+      - "10%"
+      - "5%"
+      - ""
+      
   dvbs2_tx_frame_length:
     type: string
     desc: "Frame length type to use. Valid values are: SHORT, NORMAL, and LONG."
     path: radio/dvbs2/tx/config/frame_length
+    default: NORMAL
+    options:
+      - SHORT
+      - NORMAL
+      - LONG
+      
   dvbs2_tx_signal_scaling:
     type: f64
     desc: Scale of resulting signal.
     path: radio/dvbs2/tx/config/signal_scaling
+    default: 1.0
+    min: 0.0
+    max: 10.0
+    step: 0.1
 
+  # ============================================
+  # GFSK TX Configuration
+  # ============================================
   gfsk_tx_force_on:
     type: boolean
     desc: Force the channel to always be on.
     path: radio/gfsk/tx/config/force_on
+    default: false
+    
   gfsk_tx_idle_timeout_s:
     type: u64
     desc: Power down channel after being idle for specified time.
     path: radio/gfsk/tx/config/idle_timeout_s
+    default: 10
+    min: 0
+    max: 3600
+    unit: seconds
+    
   gfsk_tx_fe_frequency:
     type: f64
     desc: Frequency to receive from.
     path: radio/gfsk/tx/config/fe/frequency
+    default: 401.5e6
+    min: 1.0e6
+    max: 1.0e9
+    unit: Hz
+    
   gfsk_tx_fe_gain:
     type: f64
     desc: Gain setting for gfsk TX.
     path: radio/gfsk/tx/config/fe/gain
+    default: 10
+    min: -10
+    max: 20
+    step: 0.5
+    unit: dB
+    
   gfsk_tx_fe_atten:
     type: f64
     desc: Digitial step attenuator setting for gfsk TX.
     path: radio/gfsk/tx/config/fe/atten
+    default: 30
+    min: 0
+    max: 31.75
+    step: 0.25
+    unit: dB
+    
   gfsk_tx_fe_sample_rate:
     type: f64
     desc: Sample rate of the rfic.
     path: radio/gfsk/tx/config/fe/sample_rate
+    default: 400e3
+    min: 100e3
+    max: 10e6
+    unit: Hz
+    
   gfsk_tx_symbol_rate:
     type: f64
     desc: Symbol rate.  Must be integer division of sample rate.
     path: radio/gfsk/tx/config/mod/symbol_rate
+    default: 12.5e3
+    min: 1e3
+    max: 1e6
+    unit: symbols/s
+    
   gfsk_tx_mod_index:
     type: f32
     desc: Modulation index.
     path: radio/gfsk/tx/config/mod_index
+    default: 0.5
+    min: 0.1
+    max: 2.0
+    step: 0.01
+    
   gfsk_tx_max_payload_len:
     type: u32
     desc: Maximum payload length in bytes.
     path: radio/gfsk/tx/config/max_payload_len
+    default: 128
+    min: 1
+    max: 65535
+    unit: bytes
+    
   gfsk_tx_bt:
     type: f32
     desc: 3db bandwidth symbol time product.
     path: radio/gfsk/tx/config/bt
+    default: 1.0
+    min: 0.1
+    max: 2.0
+    step: 0.1
 
+  # ============================================
+  # Anylink Configuration
+  # ============================================
   anylink_active_tx_channel:
     type: string
     desc: "The channel anylink should be actively downlinking on. Valid values are: tx_uhf, tx_sband, tx_xband. You can also use an empty string to disable the active channel."
     path: space_router/config/endpoints/ep_tap0/active_tx_channel
-
-# Always sent by the USX
-# Always received by the gateway
-metrics:
-  controld_version:
-    type: string
-    desc: The version of controld
-    path: _tags/git_hash
-  controld_timestamp:
-    type: string
-    desc: The timestamp of the powerd build
-    path: _tags/build_timestamp_utc
-  powerd_version:
-    type: string
-    desc: The version of powerd
-    path: _proxy/powerd/_tags/git_hash
-  powerd_timestamp:
-    type: string
-    desc: The timestamp of the powerd build
-    path: _proxy/powerd/_tags/build_timestamp_utc
-  radiod_version:
-    type: string
-    desc: The version of radiod
-    path: _proxy/radiod/_tags/radiod_git_hash
-  radiod_timestamp:
-    type: string
-    desc: The timestamp of the radiod build
-    path: _proxy/radiod/_tags/radiod_build_timestamp_utc
-  fpga_version:
-    type: string
-    desc: The version of the fpga
-    path: _proxy/radiod/_tags/fpga_git_hash
-  fpga_timestamp:
-    type: string
-    desc: The timestamp of the fpga build
-    path: _proxy/radiod/_tags/fpga_build_timestamp
-  fpga_project_name:
-    type: string
-    desc: The name of the fpga project
-    path: _proxy/radiod/_tags/fpga_project_name
-  anylink_version:
-    type: string
-    desc: The version of anylink
-    path: _proxy/anylink/_tags/version
-  psk_cc_tx_bytes_total:
-    type: u64
-    desc: The number of bytes we have received from the tx socket that successfully sent.
-    path: radio/psk_cc/tx/metrics/bytes_total
-  psk_cc_tx_underflows:
-    type: u64
-    desc: The number of times we've underflowed.
-    path: radio/psk_cc/tx/metrics/underflows
-  psk_cc_tx_client_recv_errors:
-    type: u64
-    desc: Every time we get a bad return value from recv'ing on the tx socket.
-    path: radio/psk_cc/tx/metrics/client_recv_errors
-  psk_cc_tx_client_msgs:
-    type: u64
-    desc: Every time we successfully recv'd on the tx socket.
-    path: radio/psk_cc/tx/metrics/client_msgs
-  psk_cc_tx_frames_transmitted:
-    type: u64
-    desc: Every time we were able to transmit a frame over rf.
-    path: radio/psk_cc/tx/metrics/frames_transmitted
-  psk_cc_tx_failed_transmissions:
-    type: u64
-    desc: Every time we were unable to transmit a frame over rf.
-    path: radio/psk_cc/tx/metrics/failed_transmissions
-  psk_cc_tx_dropped_packets:
-    type: u64
-    desc: Every time a packet is dropped due to failure to enable a channel.
-    path: radio/psk_cc/tx/metrics/dropped_packets
-  psk_cc_tx_idle_frames_transmitted:
-    type: u64
-    desc: The total number of idle frames transmitted.
-    path: radio/psk_cc/tx/metrics/idle_frames_transmitted
-  psk_cc_tx_failed_idle_frames_transmitted:
-    type: u64
-    desc: The amount of times we tried to transmit an idle frame and it failed
-    path: radio/psk_cc/tx/metrics/failed_idle_frames_transmitted
-  psk_cc_tx_failed_bytes_in_flight_checks:
-    type: u64
-    desc: The amount of times the check for bytes_in_flight failed.
-    path: radio/psk_cc/tx/metrics/failed_bytes_in_flight_checks
-  psk_cc_tx_modem_underflows:
-    type: u64
-    desc: The number of times we've underflowed (as detected by the modem).
-    path: radio/psk_cc/tx/metrics/modem_underflows
-  psk_cc_tx_ad9361_tx_pll_lock:
-    type: boolean
-    desc: Is the tx pll of the ad9361 locked?
-    path: radio/psk_cc/tx/metrics/ad9361_tx_pll_lock
-
-  psk_cc_rx_bytes_total:
-    type: u64
-    desc: The number of bytes we have received and communicated to the client.
-    path: radio/psk_cc/rx/metrics/bytes_total
-  psk_cc_rx_client_send_errors:
-    type: u64
-    desc: Every time we get a bad return value from send'ing on the rx socket
-    path: radio/psk_cc/rx/metrics/client_send_errors
-  psk_cc_rx_client_msgs:
-    type: u64
-    desc: Every time we successfully send on the rx socket.
-    path: radio/psk_cc/rx/metrics/client_msgs
-  psk_cc_rx_frames_received:
-    type: u64
-    desc: Every time we were able to receive a frame over rf.
-    path: radio/psk_cc/rx/metrics/frames_received
-  psk_cc_rx_failed_receptions:
-    type: u64
-    desc: Every time we were unable to receive a frame over rf.
-    path: radio/psk_cc/rx/metrics/failed_receptions
-  psk_cc_rx_dropped_good_packets:
-    type: u64
-    desc: Every time the socket's queue is full and we have to drop a good packet.
-    path: radio/psk_cc/rx/metrics/dropped_good_packets
-  psk_cc_rx_failed_frames_available_checks:
-    type: u64
-    desc: The amount of times the check for frames_available failed.
-    path: radio/psk_cc/rx/metrics/failed_frames_available_checks
-  psk_cc_rx_encountered_frames_in_progress:
-    type: u64
-    desc: The amount of times we encountered frames in progress when checking for the number of frames available.
-    path: radio/psk_cc/rx/metrics/encountered_frames_in_progress
-  psk_cc_rx_modem_dma_overflows:
-    type: u64
-    desc: The amount of times the modem overflows.
-    path: radio/psk_cc/rx/metrics/modem_dma_overflows
-  psk_cc_rx_modem_dma_packet_count:
-    type: u32
-    desc: The number of packets in the DMA.
-    path: radio/psk_cc/rx/metrics/modem_dma_packet_count
-  psk_cc_rx_signal_present:
-    type: boolean
-    desc: Does the modem detect if a signal is present?
-    path: radio/psk_cc/rx/metrics/signal_present
-  psk_cc_rx_carrier_lock:
-    type: boolean
-    desc: Is the modem locked on to the carrier?
-    path: radio/psk_cc/rx/metrics/carrier_lock
-  psk_cc_rx_frame_sync_lock:
-    type: boolean
-    desc: Are we seeing frame sync words in the modem?
-    path: radio/psk_cc/rx/metrics/frame_sync_lock
-  psk_cc_rx_fec_confirmed_lock:
-    type: boolean
-    desc: FEC lock status
-    path: radio/psk_cc/rx/metrics/fec_confirmed_lock
-  psk_cc_rx_fec_ber:
-    type: f32
-    desc: FEC BER
-    path: radio/psk_cc/rx/metrics/fec_ber
-  psk_cc_rx_ad9361_rx_pll_lock:
-    type: boolean
-    desc: Is the rx pll of the ad9361 locked?
-    path: radio/psk_cc/rx/metrics/ad9361_rx_pll_lock
-  psk_cc_rx_ad9361_bb_pll_lock:
-    type: boolean
-    desc: Is the baseband pll locked? It’s used to generate all baseband related clock signals.
-    path: radio/psk_cc/rx/metrics/ad9361_bb_pll_lock
-
-  dvbs2_tx_bytes_total:
-    type: u64
-    desc: The number of bytes we have received from the tx socket that successfully sent.
-    path: radio/dvbs2/tx/metrics/bytes_total
-  dvbs2_tx_underflows:
-    type: u64
-    desc: The number of times we've underflowed.
-    path: radio/dvbs2/tx/metrics/underflows
-  dvbs2_tx_client_recv_errors:
-    type: u64
-    desc: Every time we get a bad return value from recv'ing on the tx socket.
-    path: radio/dvbs2/tx/metrics/client_recv_errors
-  dvbs2_tx_client_msgs:
-    type: u64
-    desc: Every time we successfully recv'd on the tx socket.
-    path: radio/dvbs2/tx/metrics/client_msgs
-  dvbs2_tx_frames_transmitted:
-    type: u64
-    desc: Every time we were able to transmit a frame over rf.
-    path: radio/dvbs2/tx/metrics/frames_transmitted
-  dvbs2_tx_failed_transmissions:
-    type: u64
-    desc: Every time we were unable to transmit a frame over rf.
-    path: radio/dvbs2/tx/metrics/failed_transmissions
-  dvbs2_tx_dropped_packets:
-    type: u64
-    desc: Every time a packet is dropped due to failure to enable a channel.
-    path: radio/dvbs2/tx/metrics/dropped_packets
-  dvbs2_tx_idle_frames_transmitted:
-    type: u64
-    desc: The total number of idle frames transmitted.
-    path: radio/dvbs2/tx/metrics/idle_frames_transmitted
-  dvbs2_tx_failed_idle_frames_transmitted:
-    type: u64
-    desc: The amount of times we tried to transmit an idle frame and it failed
-    path: radio/dvbs2/tx/metrics/failed_idle_frames_transmitted
-  dvbs2_tx_failed_bytes_in_flight_checks:
-    type: u64
-    desc: The amount of times the check for bytes_in_flight failed.
-    path: radio/dvbs2/tx/metrics/failed_bytes_in_flight_checks
-  dvbs2_tx_dummy_pl_frames:
-    type: u64
-    desc: The number of dummy pl frames sent by the modem.
-    path: radio/dvbs2/tx/metrics/dummy_pl_frames
-
-  gfsk_tx_bytes_total:
-    type: u64
-    desc: The number of bytes we have received from the tx socket that successfully sent.
-    path: radio/gfsk/tx/metrics/bytes_total
-  gfsk_tx_underflows:
-    type: u64
-    desc: The number of times we've underflowed.
-    path: radio/gfsk/tx/metrics/underflows
-  gfsk_tx_client_recv_errors:
-    type: u64
-    desc: Every time we get a bad return value from recv'ing on the tx socket.
-    path: radio/gfsk/tx/metrics/client_recv_errors
-  gfsk_tx_client_msgs:
-    type: u64
-    desc: Every time we successfully recv'd on the tx socket.
-    path: radio/gfsk/tx/metrics/client_msgs
-  gfsk_tx_frames_transmitted:
-    type: u64
-    desc: Every time we were able to transmit a frame over rf.
-    path: radio/gfsk/tx/metrics/frames_transmitted
-  gfsk_tx_failed_transmissions:
-    type: u64
-    desc: Every time we were unable to transmit a frame over rf.
-    path: radio/gfsk/tx/metrics/failed_transmissions
-  gfsk_tx_dropped_packets:
-    type: u64
-    desc: Every time a packet is dropped due to failure to enable a channel.
-    path: radio/gfsk/tx/metrics/dropped_packets
-  gfsk_tx_idle_frames_transmitted:
-    type: u64
-    desc: The total number of idle frames transmitted.
-    path: radio/gfsk/tx/metrics/idle_frames_transmitted
-  gfsk_tx_failed_idle_frames_transmitted:
-    type: u64
-    desc: The amount of times we tried to transmit an idle frame and it failed
-    path: radio/gfsk/tx/metrics/failed_idle_frames_transmitted
-  gfsk_tx_failed_bytes_in_flight_checks:
-    type: u64
-    desc: The amount of times the check for bytes_in_flight failed.
-    path: radio/gfsk/tx/metrics/failed_bytes_in_flight_checks
-
-  ad9122_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/ad9122_pgood
-  ad9361_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/ad9361_pgood
-  adrf6780_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/adrf6780_pgood
-  at86_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/at86_pgood
-  at86_is_pll_locked:
-    type: boolean
-    desc: Reports if this pll is locked.
-    path: hw/metrics/at86_is_pll_locked
-  aux_3v8_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/aux_3v8_isense
-  aux_3v8_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/aux_3v8_vsense
-  carrier_28v0_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/carrier_28v0_isense
-  carrier_28v0_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/carrier_28v0_vsense
-  carrier_2v1_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/carrier_2v1_isense
-  carrier_2v1_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/carrier_2v1_vsense
-  carrier_2v6_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/carrier_2v6_isense
-  carrier_2v6_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/carrier_2v6_vsense
-  carrier_3v8_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/carrier_3v8_isense
-  carrier_3v8_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/carrier_3v8_vsense
-  carrier_5v5_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/carrier_5v5_isense
-  carrier_5v5_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/carrier_5v5_vsense
-  carrier_temp:
-    type: f64
-    desc: The measured temperature for this part of the board.
-    path: hw/metrics/carrier_temp
-  lband_rx_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/lband_rx_pgood
-  lband_temp:
-    type: f64
-    desc: The measured temperature for this part of the board.
-    path: hw/metrics/lband_temp
-  lband_tx_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/lband_tx_pgood
-  lband_tx_rf_detect:
-    type: f64
-    desc: The detected power level for the rf chain.
-    path: hw/metrics/lband_tx_rf_detect
-  lmk04832_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/lmk04832_pgood
-  lmk04832_is_pll_locked:
-    type: boolean
-    desc: Reports if this pll is locked.
-    path: hw/metrics/lmk04832_is_pll_locked
-  lmx2594_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/lmx2594_pgood
-  max2771_a_1_is_pll_locked:
-    type: boolean
-    desc: Reports if this pll is locked.
-    path: hw/metrics/max2771_a_1_is_pll_locked
-  max2771_a_2_is_pll_locked:
-    type: boolean
-    desc: Reports if this pll is locked.
-    path: hw/metrics/max2771_a_2_is_pll_locked
-  max2771_a_bias_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/max2771_a_bias_pgood
-  max2771_a_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/max2771_a_pgood
-  max2771_b_1_is_pll_locked:
-    type: boolean
-    desc: Reports if this pll is locked.
-    path: hw/metrics/max2771_b_1_is_pll_locked
-  max2771_b_2_is_pll_locked:
-    type: boolean
-    desc: Reports if this pll is locked.
-    path: hw/metrics/max2771_b_2_is_pll_locked
-  max2771_b_bias_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/max2771_b_bias_pgood
-  max2771_b_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/max2771_b_pgood
-  rf_fe_mux_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/rf_fe_mux_pgood
-  sband_rx_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/sband_rx_pgood
-  sband_temp:
-    type: f64
-    desc: The measured temperature for this part of the board.
-    path: hw/metrics/sband_temp
-  sband_tx_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/sband_tx_pgood
-  sband_tx_rf_detect:
-    type: f64
-    desc: The detected power level for the rf chain.
-    path: hw/metrics/sband_tx_rf_detect
-  si5345_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/si5345_pgood
-  som_5v0_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/som_5v0_isense
-  som_5v0_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/som_5v0_vsense
-  uhf_rx_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/uhf_rx_pgood
-  uhf_temp:
-    type: f64
-    desc: The measured temperature for this part of the board.
-    path: hw/metrics/uhf_temp
-  uhf_tx_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/uhf_tx_pgood
-  uhf_tx_rf_detect:
-    type: f64
-    desc: The detected power level for the rf chain.
-    path: hw/metrics/uhf_tx_rf_detect
-  xband_24v0_isense:
-    type: f64
-    desc: The measured current going through the rail.
-    path: hw/metrics/xband_24v0_isense
-  xband_24v0_vsense:
-    type: f64
-    desc: The measured voltage of the rail.
-    path: hw/metrics/xband_24v0_vsense
-  xband_drain_pgood:
-    type: boolean
-    desc: Reports if an LDO is able to supply power for a rail.
-    path: hw/metrics/xband_drain_pgood
-  xband_temp:
-    type: f64
-    desc: The measured temperature for this part of the board.
-    path: hw/metrics/xband_temp
-  xband_tx_rf_detect:
-    type: f64
-    desc: The detected power level for the rf chain.
-    path: hw/metrics/xband_tx_rf_detect
-
-  anylink_uhf_tx_sent_bytes:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_uhf/sent_bytes
-  anylink_uhf_tx_sent_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_uhf/sent_packets
-  anylink_uhf_tx_sent_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_uhf/sent_frames
-  anylink_uhf_tx_overflow_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_uhf/overflow_frames
-
-  anylink_sband_tx_sent_bytes:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_sband/sent_bytes
-  anylink_sband_tx_sent_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_sband/sent_packets
-  anylink_sband_tx_sent_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_sband/sent_frames
-  anylink_sband_tx_overflow_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_sband/overflow_frames
-
-  anylink_xband_tx_sent_bytes:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_xband/sent_bytes
-  anylink_xband_tx_sent_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_xband/sent_packets
-  anylink_xband_tx_sent_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_xband/sent_frames
-  anylink_xband_tx_overflow_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_channels/tx_xband/overflow_frames
-
-  anylink_sband_rx_received_bytes:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/received_bytes
-  anylink_sband_rx_received_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/received_packets
-  anylink_sband_rx_received_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/received_frames
-  anylink_sband_rx_dropped_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/dropped_packets
-  anylink_sband_rx_dropped_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/dropped_frames
-  anylink_sband_rx_socket_errors:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/socket_errors
-  anylink_sband_rx_idle_frames:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_channels/rx_sband/idle_frames
-
-  anylink_heartbeats_sent:
-    type: u64
-    desc: placeholder
-    path: space_router/heartbeats_sent
-  anylink_heartbeats_received:
-    type: u64
-    desc: placeholder
-    path: space_router/heartbeats_received
-  anylink_rx_radio_bad_header:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_radio_bad_header
-  anylink_rx_radio_packets_received:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_radio_packets_received
-  anylink_tx_radio_packets_send_errors:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_radio_packets_send_errors
-  anylink_tx_radio_packets_sent:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_radio_packets_sent
-  anylink_tx_radio_packet_nodest:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_radio_packet_nodest
-  anylink_tx_radio_packet_truncate:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_radio_packet_truncate
-  anylink_tx_radio_packet_pad:
-    type: u64
-    desc: placeholder
-    path: space_router/tx_radio_packet_pad
-  anylink_rx_radio_no_endpoint:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_radio_no_endpoint
-  anylink_rx_radio_reject_echo:
-    type: u64
-    desc: placeholder
-    path: space_router/rx_radio_reject_echo
-  anylink_total_endpoint_packets_received:
-    type: u64
-    desc: placeholder
-    path: space_router/total_endpoint_packets_received
-  anylink_total_endpoint_packets_sent:
-    type: u64
-    desc: placeholder
-    path: space_router/total_endpoint_packets_sent
-  anylink_encryption_failed:
-    type: u64
-    desc: placeholder
-    path: space_router/encryption_failed
-  anylink_decryption_failed:
-    type: u64
-    desc: placeholder
-    path: space_router/decryption_failed
-
-  anylink_tap_endpoint_active_tx_channel:
-    type: string
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/active_tx_channel
-  anylink_tap_endpoint_mtu:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/mtu
-  anylink_tap_endpoint_recv_bytes:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/recv_bytes
-  anylink_tap_endpoint_recv_errors:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/recv_errors
-  anylink_tap_endpoint_recv_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/recv_packets
-  anylink_tap_endpoint_send_bytes:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/send_bytes
-  anylink_tap_endpoint_send_errors:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/send_errors
-  anylink_tap_endpoint_send_packets:
-    type: u64
-    desc: placeholder
-    path: space_router/endpoints/ep_tap0/send_packets
+    default: tx_sband
+    options:
+      - tx_uhf
+      - tx_sband
+      - tx_xband
+      - ""
